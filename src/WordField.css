@@ -1,0 +1,16 @@
+.mainBox {
+    border: 1px solid #ddd;
+    width: 100%;
+    height: auto;
+    max-width: 760px;
+    display: flex;
+    margin: 20px 10px 20px 50px;
+  }
+  
+  @media (min-width: 360px) {
+    .mainBox {
+      width: 60%;
+      height: 500px;
+    }
+  }
+  

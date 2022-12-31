@@ -1,0 +1,55 @@
+.totalField {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    margin: 20px 0 20px 50px;
+    width: 80%;
+    height: auto;
+    max-width: 360px;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  form label {
+    margin: 16px 8px 8px 8px;
+    font-family: "Helvetica Neue", sans-serif;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  form input {
+    margin: 16px 8px 8px 8px;
+    padding: 12px 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+  
+  form button {
+    margin: 16px 8px 8px 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    background-color: blue;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  form button:hover {
+    background-color: #4CAF50;
+  }
+  
+  .totalField:hover {
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19);
+    transform: scale(1.05);
+  }
+  

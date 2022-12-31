@@ -1,0 +1,56 @@
+.wordCard {
+    background-color: #fff;
+    border: 2px solid #000;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 16px;
+    padding: 16px;
+    width: 150px;
+    height: 150px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .wordCard .word {
+    font-family: "Roboto Condensed", sans-serif;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin: 0 0 8px 0;
+  }
+  
+  .wordCard .maker {
+    font-family: "Roboto", sans-serif;
+    font-size: 12px;
+    font-style: italic;
+    color: #999;
+    margin: 0 0 8px 0;
+  }
+  
+  .wordCard .message {
+    font-family: "Roboto", sans-serif;
+    font-size: 14px;
+    color: #333;
+    margin: 0;
+  }
+  
+  .wordCard:hover {
+    cursor: pointer;
+  }
+  
+  .wordCard:hover .maker,
+  .wordCard:hover .message {
+    display: block;
+  }
+
+  .word-card-tooltip {
+    position: absolute;
+    background-color: #fff;
+    color: #333;
+    padding: 8px;
+  }
+  
+  
