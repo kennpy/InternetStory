@@ -1,26 +1,25 @@
 const fs = require('fs');
-const csvParser = require("csv-parser");
+// const csvParser = require("csv-parser");
 const xss = require('xss');
-const v = require('validator');
-const { resolve } = require('path');
+
+const validator = require('validator');
+
+const path = require('path');
+const csv = require('fast-csv');
+
+const { once } = require('events');
+
 
 const CSV_FILE_PATH = "/Users/kenjismith/Programming/personal/internet-story/server/helpers/Terms-to-Block.csv";
 const NAUGHTY_LIST_FILE_PATH = "/Users/kenjismith/Programming/personal/internet-story/server/helpers/naughtyList2.json";
+const badWordKey = 'FrontGate Media,Your Gateway to the Chrisitan Audience';
+
+const whitelistedLowerCase = ['a', 'i', 'ad', 'am', 'as', 'at', 'be', 'by', 'do', 'go'
+    , 'he', 'hi', 'hey', 'id', 'if', 'in', 'is', 'it', 'me', 'my', 'no', 'of', 'oh', 'ok', 'as'
+    , 'an', 'and', 'to', 'up', 'so', 'we', 'us', 'or', 'pi', 'ha', 'on', 'by', 'ad'];
 
 
-// GENERAL HELPER SECTION
-
-/**
- * Generate and returns random bool
- * @returns random boolean
- */
-const getRandBool = () => {
-    const randBool = (Math.random() > .5) ? true : false
-    console.log("new bool ; ", randBool);
-    return randBool;
-}
-
-// WORD VALIDATION SECTION
+// TOP CHECKER
 
 /**
  * Verifies word is not racist, vulgar, or link
@@ -29,15 +28,23 @@ const getRandBool = () => {
  */
 const wordIsValid = async (word) => {
 
-    let isBadWord = await wordIsBad(word).catch((err) => {
-        console.log("error that was catched : ", err);
-    }); // await make it undefined -- originally it is a promise that is pending (idk what is going on)
-    let wordIsRegex = cleanedRegex(word);
-    let wordIsWeird = userDidWeirdStuff(word);
+    word = cleanXSS(word);
+    let wordIsRegex = wordWasRegex(word);
+    let isAcceptableWord;
+    let wordIsWeird;
 
-    word = preventXSS(word);
+    if (wordIsRegex) return false;
+    else {
+        isAcceptableWord = await wordIsNaughty(word).catch((err) => {
+            console.log("error that was catched : ", err);
+        });
+        console.log("AT TOP LEVEL VALIDITY after first pass IS : ", isAcceptableWord)
+        wordIsWeird = performRandomChecks(word);
+    }
 
-    console.log("word is bad : ", isBadWord);
+
+
+    console.log("word is acceptable : ", isAcceptableWord);
     console.log("word is regex : ", wordIsRegex);
     console.log("word is weird : ", wordIsWeird);
     console.log("word after preventXSS : ", word);
@@ -45,68 +52,105 @@ const wordIsValid = async (word) => {
 
     // check if word is a url
 
-    if (wordIsRegex) return false;
-    if (isBadWord) return false;
+    if (!isAcceptableWord) return false;
     if (wordIsWeird) return false;
 
     return true;
 }
-// HELPERS THAT HELP
+
+
+// HELP CHECKERS
 
 /**
  * Checks if word is a url
  * @param {string} word
  * @returns {bool} isUrl
  */
-const userDidWeirdStuff = async function (word) {
+const performRandomChecks = function (word) {
     // removed : v.isIdentityCard , 
-    let listOfCheckers = [v.isBtcAddress, v.isCurrency, v.isEAN, v.isEmail, v.isFQDN, v.isIBAN, v.isIP, v.isISBN, v.isIPRange, v.isMobilePhone, v.isEthereumAddress, v.isJWT, v.isJSON, v.isLatLong, v.isMACAddress, v.isMongoId, v.isPort, v.isUUID];
+    let listOfCheckers = [validator.isBtcAddress, validator.isCurrency, validator.isEAN, validator.isEmail, validator.isFQDN, validator.isIBAN, validator.isIP, validator.isISBN, validator.isIPRange, validator.isMobilePhone, validator.isEthereumAddress, validator.isJWT, validator.isJSON, validator.isLatLong, validator.isMACAddress, validator.isMongoId, validator.isPort, validator.isUUID];
 
-    listOfCheckers.forEach(validChecker => {
-        if (validChecker(word)) {
-            return false;
+    for (let i = 0; i < listOfCheckers.length; i++) {
+        let currentCheckValidity = listOfCheckers[i];
+        if (currentCheckValidity(word)) {
+            return true
         }
-    });
-    return true;
+    }
+    return false;
 
 }
 
 /**
  * Checks if word is bad word (from list of bad words)
  */
-async function wordIsBad(word) {
+async function wordIsNaughty(word) {
     try {
+        console.log("NEW ENTRY \n\n\n\n\n\n\n");
         // check if word in list of bad words
 
         //let badListOne = await convertCsvToList(CSV_FILE_PATH);
-        //let badListTwo = await convertJsonToList(NAUGHTY_LIST_FILE_PATH);
         // let badLists = await Promise.all([convertCsvToList(CSV_FILE_PATH), convertJsonToList(NAUGHTY_LIST_FILE_PATH)]).then((data) => console.log("\n\nReturned bad lists\n\n : ", data));
-        convertCsvToList(CSV_FILE_PATH).then((result) => {
-            console.log("RESULT in bad: ", result);
-            let wordConclusion = result.includes(word);
-            resolve(wordConclusion);
-        })
+        let badListOne = await convertCsvToList(CSV_FILE_PATH)
+        console.log("wordIsBad --> covertCSVToList returns ", badListOne.length);
 
-        // console.log("Bad lists before conversion : ", badLists);
-        // badLists = badLists ?? [-1]; // if badlists is null we set it to an array storing -1 (helps debug)
+        let badListTwo = await convertJsonToList(NAUGHTY_LIST_FILE_PATH);
 
-        // if (badLists[0] != -1) {
-        //     [badListOne, badListTwo] = badLists;
+        let wordIsValid = checkNaughtyValidity(badListOne, badListTwo, word);
+        console.log("word validity we are returning: ", wordIsValid);
+        return wordIsValid;
 
-        //     console.log("bad list : ", badLists);
-        //     console.log("L ONE : ", badListOne);
-        //     console.log("L TWO L : ", badListTwo);
-
-
-        //     if (badListOne.includes(word)) return false;
-        //     if (badListTwo.includes(word)) return false;
-
-        //     else {
-        //         return true;
-        //     }
-        // }
     } catch (err) {
         console.log("ERROR WORD_is_bad : ", err.message);
+    }
+
+}
+
+function checkNaughtyValidity(listOne, listTwo, word) {
+
+    // check if on whitelist
+    // whitelisted words inlude "a" and "I" case insensitive
+    // we do this check so no words such as "a" get included else they will be considered invalid as they are substrings
+
+    // foreach element in whitelist compare case instensitive equals
+    let isWhiteListed = false;
+    let counter = 0
+    while (counter < whitelistedLowerCase.length && !isWhiteListed) {
+        whiteListedWord = whitelistedLowerCase[counter];
+        isWhiteListed = caseInsensitiveEquals(whiteListedWord, word);
+        counter++;
+    }
+
+    // if its not in whitelist perform substring checks else return true
+    if (!isWhiteListed) {
+
+        // check vaildity for first array
+        for (let i = 0; i < listOne.length; i++) {
+            let currentWord = listOne[i];
+            // if word is greater than 3 check for substring else check directly
+            // we do this so no words like a get checked -- a would be considered invalid as its a substring
+            // of many of the words, so for words smaller than 3 we check directly else look for nested
+
+            if (word.toLowerCase().includes(currentWord.toLowerCase())) {
+                return false
+            }
+        }
+        // check for second array
+        for (let i = 0; i < listTwo.length; i++) {
+            let currentWord = listTwo[i];
+            // if word is greater than 3 check for substring else check directly
+            // we do this so no words like a get checked -- a would be considered invalid as its a substring
+            // of many of the words, so for words smaller than 3 we check directly else look for nested
+            if (word.toLowerCase().includes(currentWord.toLowerCase())) {
+                return false
+            }
+        }
+
+        return true;
+    }
+
+    // return true since we know it is whitelisted (case insensitive)
+    else {
+        return true;
     }
 
 }
@@ -114,20 +158,30 @@ async function wordIsBad(word) {
 /**
  * Checks if word is a regex expressoin (these are bad since they can cause errors)
  */
-function cleanedRegex(oldWord) {
-    var scriptRegexTwo = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
-    let newWord = oldWord.replace(/[|&;$%@"<>()+,]/g, "");
-    newWord = newWord.replace(scriptRegexTwo, "");
+function wordWasRegex(oldWord) {
+    // var scriptRegexTwo = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+    // let newWord = oldWord.replace(/[|&;$%@"<>()+,]/g, "");
+    // newWord = newWord.replace(scriptRegexTwo, "");
 
-    return hadToClean = (oldWord == newWord) ? true : false;
+    let newWord = oldWord.replace(/[^0-9a-z-A-Z ]/g, "").replace(/ +/, " ");
+    console.log(oldWord);
+    console.log(newWord);
+    console.log("after regex check  SAME: ", oldWord === newWord);
+
+
+    // if not changes were made we now it is not regex, else it is
+    return hadToClean = (oldWord === newWord) ? false : true;
 }
 /**
- * Checks everything im not thinking about
+ * Filters word such that no XSS is possible
  */
-function preventXSS(word) {
+function cleanXSS(word) {
     word = xss.filterXSS(word);
     return word;
 }
+
+
+// GET LISTS
 
 /**
  * Converts csv file of words to a list 
@@ -135,15 +189,15 @@ function preventXSS(word) {
  * @return {Array} - list of words
  */
 const convertCsvToList = async (csvFilePath) => {
+    console.log("INSIDE CONVERT CSV");
     try {
+
         let wordListOut = [];
-        GetList(csvFilePath).then((newlyMadeList) => {
-            console.log('GetList returned ', newlyMadeList);
-            Promise.resolve(newlyMadeList);
-            // return new Promise((resolve) => {
-            //     resolve(newlyMadeList);
-            // });
-        });
+        console.log("csvFilePath in convertCsv before insertion : ", csvFilePath);
+        let newlyMadeList = await GetListFromCsv(csvFilePath);
+        console.log('GetList in convertcsv returned ', newlyMadeList.length);
+        return newlyMadeList;
+
     } catch (e) {
         console.log("\n\nERROR CSV : ", e.message);
     }
@@ -154,52 +208,80 @@ const convertCsvToList = async (csvFilePath) => {
  * @returns list 
  */
 const convertJsonToList = async (filePath) => {
-    let newList = [];
-    fs.readFile(filePath, (err, data) => {
-        // for every json element add to list then return it
-        try {
-            data = JSON.parse(data);
-            data.forEach(element => {
-                newList.push(element);
-            });
-            //console.log("wordlist JSON : ", newList);
-            return new Promise((resolve) => {
-                resolve(newList);
-            })
-        }
-        catch (err) {
-            console.log("ERROR JSON : ", err.message);
-        }
-    })
-}
-// convertJsonToList(NAUGHTY_LIST_FILE_PATH);
-
-module.exports = { wordIsValid };
-
-async function GetList(csvFilePath) {
     try {
-        fs.readFile(csvFilePath, (err, data) => {
-            let counter = 0;
-
-            let wordListIn = [];
-            fs.createReadStream(csvFilePath)
-                .pipe(csvParser())
-                .on("data", (data) => {
-                    // ignore the first entry (meta data we dont care about)
-                    if (counter != 0) {
-                        wordListIn.push(data['Your Gateway to the Chrisitan Audience']);
-                    }
-                    counter++;
-                });
-            console.log('inside ', wordListIn);
-            Promise.resolve(wordListIn);
-
-        }).then(lst => {
-            return new Promise((resolve) => {
-                resolve(lst);
-            });
+        let newList = [];
+        const fileData = fs.readFileSync(filePath, { encoding: 'utf8', flag: 'r' });
+        fileData.split(",").forEach(str => {
+            newList.push(str);
         })
-    } catch (err) {
+
+        return newList;
+    }
+    catch (err) {
+        console.log("ERROR JSON : ", err.message);
+    }
+}
+
+// GENERAL HELPER SECTION
+
+async function GetListFromCsv(csvFilePath) {
+    try {
+
+        let wordList = [];
+
+        const parseOptions = {
+            objectMode: true,
+            delimiter: ";",
+            quote: null,
+            headers: true,
+            renameHeaders: false,
+        };
+
+        const stream = fs.createReadStream((path.resolve(__dirname, 'Terms-to-Block.csv')), 'utf-8')
+            .pipe(csv.parse(parseOptions))
+            .on('error', error => console.error("parsing error : ", error))
+            .on('data', row => {
+                res = replaceAll(row[badWordKey], ",", "");
+                wordList.push(res);
+            })
+            .on('end', (rowCount) => {
+                console.log(`Parsed ${rowCount} rows`)
+            })
+
+        await once(stream, 'finish');
+
+        // remove the first 3 elements
+        const numToDelete = 3
+        if (wordList.length > numToDelete);
+        for (let i = 0; i < numToDelete; i++) {
+            wordList.shift();
+        }
+
+        return wordList;
+    }
+    catch (err) {
         console.log("\nError in GetList : ", err.message);
     }
 }
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
+function replaceAll(str, find, replace) {
+    return str.replace(new RegExp(escapeRegExp(find), 'g'), replace);
+}
+
+function caseInsensitiveEquals(a, b) {
+    return typeof a === 'string' && typeof b === 'string'
+        ? a.localeCompare(b, undefined, { sensitivity: 'accent' }) === 0
+        : a === b;
+}
+
+
+// TEST
+
+wordIsValid("another one");
+
+module.exports = { wordIsValid };
+
