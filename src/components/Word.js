@@ -18,6 +18,11 @@ const Word = ({ word, maker, message }) => {
     const handleMouseEnter = () => setHover(true);
     const handleMouseLeave = () => setHover(false);
 
+    console.log("word we are passing to word:", word);
+    console.log("object type:", typeof word);
+    console.log("object count:", (word.split(" ").length - 1));
+    console.log("replace spaces:", word.replaceAll(" ", 'X'));
+
     return (
         <div className="word-card">
             <div
@@ -25,7 +30,7 @@ const Word = ({ word, maker, message }) => {
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
             >
-                {word}
+                <div style={{ whiteSpace: 'pre' }}>{word}</div>
             </div>
             {isHover && (
                 <div className="word-card-tooltip">

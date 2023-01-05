@@ -68,7 +68,7 @@ const wordIsValid = async (word) => {
  */
 const performRandomChecks = function (word) {
     // removed : v.isIdentityCard , 
-    let listOfCheckers = [validator.isBtcAddress, validator.isCurrency, validator.isEAN, validator.isEmail, validator.isFQDN, validator.isIBAN, validator.isIP, validator.isISBN, validator.isIPRange, validator.isMobilePhone, validator.isEthereumAddress, validator.isJWT, validator.isJSON, validator.isLatLong, validator.isMACAddress, validator.isMongoId, validator.isPort, validator.isUUID];
+    let listOfCheckers = [validator.isBtcAddress, validator.isEAN, validator.isEmail, validator.isFQDN, validator.isIBAN, validator.isIP, validator.isISBN, validator.isIPRange, validator.isMobilePhone, validator.isEthereumAddress, validator.isJWT, validator.isJSON, validator.isLatLong, validator.isMACAddress, validator.isMongoId, validator.isUUID];
 
     for (let i = 0; i < listOfCheckers.length; i++) {
         let currentCheckValidity = listOfCheckers[i];
@@ -134,13 +134,15 @@ function checkNaughtyValidity(listOne, listTwo, word) {
                 return false
             }
         }
+        console.log(listTwo);
         // check for second array
         for (let i = 0; i < listTwo.length; i++) {
             let currentWord = listTwo[i];
             // if word is greater than 3 check for substring else check directly
             // we do this so no words like a get checked -- a would be considered invalid as its a substring
             // of many of the words, so for words smaller than 3 we check directly else look for nested
-            if (word.toLowerCase().includes(currentWord.toLowerCase())) {
+
+            if (word.toLowerCase().includes(currentWord.toLowerCase()) && currentWord != '') {
                 return false
             }
         }
@@ -281,7 +283,7 @@ function caseInsensitiveEquals(a, b) {
 
 // TEST
 
-wordIsValid("another one");
+wordIsValid("i ate 100 cats");
 
 module.exports = { wordIsValid };
 

@@ -21,7 +21,7 @@ const App = () => {
   // HELPER METHODS
 
   /**
-   * adds word to list if it word is allowed (verification happens in backend)
+   * adds word to list if it word is allowed by verifying in backend)
    * @param {string} word : the word we are trying to submit 
    */
   const addWordToList = (word) => {
@@ -34,7 +34,7 @@ const App = () => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        word: word
+        word: word // remove whitespace ???? 
       })
     }
 
@@ -51,8 +51,13 @@ const App = () => {
         updateWordValidity(resJson.validWord); // THIS IS UNDEFINED
         // if the word is valid add it
         // else we don't and pass in state to form so proper form can be shown
-        const newWord = " ".concat(word)
-        if (resJson.validWord) updateWordList(() => [...wordList, " ", newWord]);
+
+        // SPACES ADDED ALREEADY
+        const wordWithSpace = "".concat(word)
+        console.log(wordWithSpace)
+        console.log(word)
+        console.log("LIST STATE : ", wordList);
+        if (resJson.validWord) updateWordList([...wordList, wordWithSpace]);
       })
     })
 
