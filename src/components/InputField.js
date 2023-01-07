@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const InputField = ({ addWordToList, wordIsValid }) => {
+const InputField = ({ addWordToList: verifyThenAdd, wordIsValid }) => {
     // Create state variables to store the values of the word, name, and message inputs
     const [word, updateWord] = useState("");
     const [name, updateName] = useState("");
@@ -23,7 +23,7 @@ const InputField = ({ addWordToList, wordIsValid }) => {
     const preventDefaultThenUpdate = (e) => {
         e.preventDefault();
         showValidForm = false;
-        addWordToList(word, name, message);
+        verifyThenAdd(word, name, message);
     }
 
     // Display an error message if the word input is invalid

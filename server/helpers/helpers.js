@@ -10,16 +10,16 @@ const csv = require('fast-csv');
 const { once } = require('events');
 
 
-const CSV_FILE_PATH = "/Users/kenjismith/Programming/personal/internet-story/server/helpers/Terms-to-Block.csv";
-const NAUGHTY_LIST_FILE_PATH = "/Users/kenjismith/Programming/personal/internet-story/server/helpers/naughtyList2.json";
-const badWordKey = 'FrontGate Media,Your Gateway to the Chrisitan Audience';
+const TERMS_BLOCK_CSV = "/Users/kenjismith/Programming/personal/internet-story/server/helpers/Terms-to-Block.csv";
+const TERMS_BLOCK_JSON = "/Users/kenjismith/Programming/personal/internet-story/server/helpers/naughtyList2.json";
+const BAD_WORD_CSV_KEY = 'FrontGate Media,Your Gateway to the Chrisitan Audience';
 
-const whitelistedLowerCase = ['a', 'i', 'ad', 'am', 'as', 'at', 'be', 'by', 'do', 'go'
+const WHITE_LISTED_WORDS = ['a', 'i', 'ad', 'am', 'as', 'at', 'be', 'by', 'do', 'go'
     , 'he', 'hi', 'hey', 'id', 'if', 'in', 'is', 'it', 'me', 'my', 'no', 'of', 'oh', 'ok', 'as'
-    , 'an', 'and', 'to', 'up', 'so', 'we', 'us', 'or', 'pi', 'ha', 'on', 'by', 'ad'];
+    , 'an', 'and', 'to', 'up', 'so', 'we', 'us', 'or', 'pi', 'ha', 'on', 'by', 'ad', '.'];
 
 
-// TOP CHECKER
+// WORD VALIDITY
 
 /**
  * Verifies word is not racist, vulgar, or link
@@ -28,11 +28,17 @@ const whitelistedLowerCase = ['a', 'i', 'ad', 'am', 'as', 'at', 'be', 'by', 'do'
  */
 const wordIsValid = async (word) => {
 
+    // if the word is empty (only space) return false
+    const strOnlyHasSpaces = word.trim().length == 0;
+    if (strOnlyHasSpaces) return false;
+
+    // perform our additional checks
     word = cleanXSS(word);
     let wordIsRegex = wordWasRegex(word);
     let isAcceptableWord;
     let wordIsWeird;
 
+    // if word is regex return false immediately so no nalicious code can be ran 
     if (wordIsRegex) return false;
     else {
         isAcceptableWord = await wordIsNaughty(word).catch((err) => {
@@ -66,9 +72,9 @@ const wordIsValid = async (word) => {
  * @param {string} word
  * @returns {bool} isUrl
  */
-const performRandomChecks = function (word) {
-    // removed : v.isIdentityCard , 
-    let listOfCheckers = [validator.isBtcAddress, validator.isEAN, validator.isEmail, validator.isFQDN, validator.isIBAN, validator.isIP, validator.isISBN, validator.isIPRange, validator.isMobilePhone, validator.isEthereumAddress, validator.isJWT, validator.isJSON, validator.isLatLong, validator.isMACAddress, validator.isMongoId, validator.isUUID];
+const performRandomChecks = (word) => {
+    // removed : v.isIdentityCard , validator.isJWT (made spaces invalid for some reason)
+    let listOfCheckers = [validator.isBtcAddress, validator.isEAN, validator.isEmail, validator.isFQDN, validator.isIBAN, validator.isIP, validator.isISBN, validator.isIPRange, validator.isMobilePhone, validator.isEthereumAddress, validator.isJSON, validator.isLatLong, validator.isMACAddress, validator.isMongoId, validator.isUUID];
 
     for (let i = 0; i < listOfCheckers.length; i++) {
         let currentCheckValidity = listOfCheckers[i];
@@ -90,10 +96,10 @@ async function wordIsNaughty(word) {
 
         //let badListOne = await convertCsvToList(CSV_FILE_PATH);
         // let badLists = await Promise.all([convertCsvToList(CSV_FILE_PATH), convertJsonToList(NAUGHTY_LIST_FILE_PATH)]).then((data) => console.log("\n\nReturned bad lists\n\n : ", data));
-        let badListOne = await convertCsvToList(CSV_FILE_PATH)
-        console.log("wordIsBad --> covertCSVToList returns ", badListOne.length);
+        let badListOne = await convertCsvToList(TERMS_BLOCK_CSV)
+        // console.log("wordIsBad --> covertCSVToList returns ", badListOne.length);
 
-        let badListTwo = await convertJsonToList(NAUGHTY_LIST_FILE_PATH);
+        let badListTwo = await convertJsonToList(TERMS_BLOCK_JSON);
 
         let wordIsValid = checkNaughtyValidity(badListOne, badListTwo, word);
         console.log("word validity we are returning: ", wordIsValid);
@@ -114,8 +120,8 @@ function checkNaughtyValidity(listOne, listTwo, word) {
     // foreach element in whitelist compare case instensitive equals
     let isWhiteListed = false;
     let counter = 0
-    while (counter < whitelistedLowerCase.length && !isWhiteListed) {
-        whiteListedWord = whitelistedLowerCase[counter];
+    while (counter < WHITE_LISTED_WORDS.length && !isWhiteListed) {
+        whiteListedWord = WHITE_LISTED_WORDS[counter];
         isWhiteListed = caseInsensitiveEquals(whiteListedWord, word);
         counter++;
     }
@@ -134,7 +140,7 @@ function checkNaughtyValidity(listOne, listTwo, word) {
                 return false
             }
         }
-        console.log(listTwo);
+        // console.log(listTwo);
         // check for second array
         for (let i = 0; i < listTwo.length; i++) {
             let currentWord = listTwo[i];
@@ -154,7 +160,6 @@ function checkNaughtyValidity(listOne, listTwo, word) {
     else {
         return true;
     }
-
 }
 
 /**
@@ -165,7 +170,7 @@ function wordWasRegex(oldWord) {
     // let newWord = oldWord.replace(/[|&;$%@"<>()+,]/g, "");
     // newWord = newWord.replace(scriptRegexTwo, "");
 
-    let newWord = oldWord.replace(/[^0-9a-z-A-Z ]/g, "").replace(/ +/, " ");
+    let newWord = oldWord.replace(/[^0-9a-z-A-Z.(): ]/g, "").replace(/ +/, " ");
     console.log(oldWord);
     console.log(newWord);
     console.log("after regex check  SAME: ", oldWord === newWord);
@@ -196,7 +201,7 @@ const convertCsvToList = async (csvFilePath) => {
 
         let wordListOut = [];
         console.log("csvFilePath in convertCsv before insertion : ", csvFilePath);
-        let newlyMadeList = await GetListFromCsv(csvFilePath);
+        let newlyMadeList = await getListFromCsv(csvFilePath);
         console.log('GetList in convertcsv returned ', newlyMadeList.length);
         return newlyMadeList;
 
@@ -226,7 +231,7 @@ const convertJsonToList = async (filePath) => {
 
 // GENERAL HELPER SECTION
 
-async function GetListFromCsv(csvFilePath) {
+async function getListFromCsv(csvFilePath) {
     try {
 
         let wordList = [];
@@ -243,7 +248,7 @@ async function GetListFromCsv(csvFilePath) {
             .pipe(csv.parse(parseOptions))
             .on('error', error => console.error("parsing error : ", error))
             .on('data', row => {
-                res = replaceAll(row[badWordKey], ",", "");
+                res = replaceAll(row[BAD_WORD_CSV_KEY], ",", "");
                 wordList.push(res);
             })
             .on('end', (rowCount) => {
@@ -254,9 +259,10 @@ async function GetListFromCsv(csvFilePath) {
 
         // remove the first 3 elements
         const numToDelete = 3
-        if (wordList.length > numToDelete);
-        for (let i = 0; i < numToDelete; i++) {
-            wordList.shift();
+        if (wordList.length > numToDelete) {
+            for (let i = 0; i < numToDelete; i++) {
+                wordList.shift();
+            }
         }
 
         return wordList;
@@ -283,7 +289,7 @@ function caseInsensitiveEquals(a, b) {
 
 // TEST
 
-wordIsValid("i ate 100 cats");
+getListFromCsv(TERMS_BLOCK_CSV);
 
 module.exports = { wordIsValid };
 
