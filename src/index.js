@@ -6,7 +6,8 @@ import App from './components/App';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
+  // renders twice in strict mode --> queries data twice and doubles our initial wordlist state
+ // <React.StrictMode>
     <App />
-  </React.StrictMode>
+ // </React.StrictMode>
 );

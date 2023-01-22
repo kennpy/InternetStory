@@ -1,27 +1,15 @@
-
-// const Word = ({ word }) => {
-//     console.log("word :" + word);
-//     return (
-//         <p className="pWord"> {word}</p >
-//     );
-// }
-
-// export default Word;
-
 import React, { useState } from "react";
+import PropTypes from 'prop-types'; // ES6
 import "./WordCard.css";
 
 
 const Word = ({ word, maker, message }) => {
     const [isHover, setHover] = useState(false);
 
+    console.log("word props : ", word, maker, message);
+
     const handleMouseEnter = () => setHover(true);
     const handleMouseLeave = () => setHover(false);
-
-    console.log("word we are passing to word:", word);
-    console.log("object type:", typeof word);
-    console.log("object count:", (word.split(" ").length - 1));
-    console.log("replace spaces:", word.replaceAll(" ", 'X'));
 
     return (
         <div className="word-card">
@@ -33,13 +21,21 @@ const Word = ({ word, maker, message }) => {
                 <div style={{ whiteSpace: 'pre' }}>{word}</div>
             </div>
             {isHover && (
-                <div className="word-card-tooltip">
-                    <div className="word-card-maker">Made by: {maker}</div>
-                    <div className="word-card-message">Message: {message}</div>
+                <div className="word-card">
+                    <div className="word-card-tooltip">
+                        <div className="word-card-maker">Made by: {maker}</div>
+                        <div className="word-card-message">Message: {message}</div>
+                    </div>
                 </div>
             )}
         </div>
     );
 };
+
+Word.propTypes = {
+    word: PropTypes.string,
+    maker: PropTypes.string,
+    message: PropTypes.string
+}
 
 export default Word;
