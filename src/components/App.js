@@ -32,47 +32,10 @@ const App = () => {
    * adds word to list if it word is allowed by verifying in backend)
    * @param {string} word : the word we are trying to submit 
    */
-  const validateThenAddWord = (word, user, message) => {
-    //  e.preventDefault();
-
-
-    const fetchOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        Word: word ,
-        User: user,
-        Message:message
-      })
-    }
-
-    // TODO : idk how to get json from the response - I'm trying to get a bool which will
-    // be used to decide whether dom is updated with new word or if word must be flagged as invalid
-
-    // but idk how sockets work so imma learn the relationship between client / server using websockets\
-    // then decide how i want to architect it once that is done
-
+  const sendWord = (word, user, message) => {
+    // e.preventDefault();
 
     socket.emit("new word", {Word: word, User : user, Message : message});
-
-    // fetch("http://localhost:3200/addWord", fetchOptions).then((res) => {
-    //   res.json().then((resJson) => {
-
-    //     // declare state of form (1 : default (normal) or 2: invalid)
-    //     updateWordValidity(resJson.validWord); // THIS IS UNDEFINED
-    //     // if the word is valid add it
-    //     // else we don't and pass in state to form so proper form can be shown
-
-    //     // SPACES ADDED ALREEADY
-
-    //     if (resJson.validWord) {
-    //       const newWord = {"Word" : word, "User" : user, "Message" : message};
-    //       updateWordList([...wordList, newWord]);
-    //     }
-    //   })
-    // })
   }
 
   socket.on("add word", (word) => {
@@ -100,19 +63,6 @@ useEffect(() => {
     })
 
     return () => socket.disconnect();
-
-    // fetch("http://localhost:3200/getAllWords")
-    // .then(response => response.json())
-    // .then(data => {
-    //   console.log(data)
-    //   console.log("wordlist before : ", wordList);
-    //   // for each piece of data make a new word object (NOT A COMPONENT) and add it to wordList
-
-    //   updateWordList(wordList => [...wordList, ...data]);
-    //   console.log("wordlist after : ", wordList);
-
-    // })
-
 }, [])
 
 
@@ -121,7 +71,7 @@ useEffect(() => {
       <h1>Welcome to Internet Story!</h1>
       <div className="mainArea">
         <WordField wordList={wordList}/>
-        <InputField addWordToList={validateThenAddWord} wordIsValid={wordIsValid} />
+        <InputField addWordToList={sendWord} wordIsValid={wordIsValid} />
       </div>
 
     </>

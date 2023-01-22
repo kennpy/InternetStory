@@ -54,8 +54,8 @@ app.use(cors());
 // LISTEN
 
 const httpServer = createServer();
+// SOCKET CONNECTION
 
-// SOCKETS
 const io = new Server(httpServer, {
     cors: {
         origin: "http://localhost:3000",
@@ -63,71 +63,8 @@ const io = new Server(httpServer, {
         credentials:true
         }
 });
-io.on('connection', (socket) => {
-    console.log('a user connected');
-    // send back the word data
-    // (default for now)
-    const wordDataQuery = "SELECT * FROM wordInfo";
 
-    DBconnection.query(wordDataQuery, (err, results) => {
-        if (err) {
-          return error.message;
-        }
-        socket.emit("newcon", (results));
-    });
-
-    socket.on('disconnect', () => {
-      console.log('user disconnected');
-    });
-
-    socket.on('new word', async (newWord) => {
-        console.log(newWord);
-        console.time('start');
-    // get the word
-    const word = newWord.Word;
-    const user = newWord.User;
-    const message = newWord.Message;
-
-    console.log("body values : ", word, user , message);
-
-    // check if it is valid
-    const validArr = await Promise.all([wordIsValid(word), wordIsValid(user), wordIsValid(message)]);
-    const validity = validArr.every(elem => elem === true);
-    // let validity = await wordIsValid(word);
-    console.log("validity to return : ", validity);
-
-    // if valid send it back
-    if(validity == true){
-        console.log("sending ", {Word : word, User : user, Message : message})
-        socket.emit("add word", {Word : word, User : user, Message : message}) 
-    }
-    // else emit false and show invalid form
-    else{
-        socket.emit("show invalid form");
-    }
-    
-        console.timeEnd('start');
-
-    // trigger socket connection`
-    // send back new word to every person that needs it (subscriber)
-    // we do this instead of sending back the whole thing to save data
-    // only do this if the word is valid
-
-    // if word is valid update DB
-    if (validity == true) {
-        // add word to db
-        const insertionArgs = `INSERT INTO wordInfo (Word, User, Message) VALUES ('${word}','${user}','${message}');`;
-        DBconnection.query(insertionArgs, (err, data) => {
-            if (err) console.log(err);
-            console.log("Added new word to Database !");
-        })
-    }
-    // else do nothing and return word validity
-
-    });
-});
-
-// DB
+// DB CON
 
 // make connection
 const DBconnection = mysql.createConnection({
@@ -139,126 +76,80 @@ const DBconnection = mysql.createConnection({
     // port : 3200;
 }); 
 
-// make a connection so now we can 
-// 1: add words
-// 2: get table (and display it to user)
-// we should parse this on backend so data is easier to send
-
 DBconnection.connect((con_err) => {
     if (con_err) {
         console.error('error connection : ', con_err);
     }
     console.log('connected as id ', DBconnection.threadId);
+}); 
 
-    console.log("BEFORE\n")
-    // get the current story stroed in db
-    let wordDataQuery = "SELECT * FROM wordInfo";
-    DBconnection.query(wordDataQuery, (query_err, results) => {
-        if (query_err) {
-            console.error("error when trying to query : ", query_err)
-        }
-        // console.log("word data returned from query : ", results);
-        // console.log("first word results[0].Word : ", results[0].Word);
-    })
-    console.log("AFTER\n")
-
-}); // note : we are not closing mysql connection since app 'never stops' -- only when server stops but then everything is down
+// SOCKETS
 
 
+let conCount = 0;
+io.on('connection', (socket) => {
+    console.log('a user connected', conCount++);
+    // send back the word data
+    // (default for now)
+    const allWordsQuery = "SELECT * FROM wordInfo";
 
-// ROUTES
+    sendEntireTable(allWordsQuery, socket);
 
-// upon first connect send back the entire list
-// we do this since the backend holds the info, so if we try to connect without making an initial request our word list is gonna be empty since it hasnt been populated
-// once its populated we only send words that we need to add back to save resources / reduce latency
+    socket.on('disconnect', () => {
+      console.log('user disconnected');
+    });
 
-// TODO : [ ]  figure out how to put frontend and backend on same server (serve react with nodejs)
-//  OR :  [ ]  request initial list state from frontend then just send it back whenever we need. then frontend and backend are seperate and we can run them on seperate servers
-// we would just need to prevent requesting on additional renders, since after first render all we need is word validatoin + addition
-// timer gets stored in frontend using sessions. we dont need sessions for anything else
-
-// or we would have to save in session becuase of reload -- then we are not requesting it every time the page reloads
-
-// send the current story and await for their submission
-// for now we are just sending db data -- later we will send both the data and page info to be biilt together (but idk how to serve the react project itself so we are just seperating these for now)
-router.get('/getAllWords', (req, res) => {
-    // check if we need to send back list of word info
-
-    // get the current story stroed in db
-    const wordDataQuery = "SELECT * FROM wordInfo";
-    DBconnection.query(wordDataQuery, (err, results, fields) => {
-        if (err) {
-          res.json(error.message);
-        }
-        res.json(results);
-      });
-     // send it to user
-
-    // concurrency / timing will  be handled with web sockets
-    // see if this is a problem with web sockets / connection pooling
-
-    // submission restriction will happen in frontend with button disable (based on timer)
-    // we'll store this in broswer to make this easier (using session) -- dont need security
-
-    // limit connections based on pooling / resources (how does this relate to aws charge -- or whatever server we are using)
-
-
-
-});
-
-// parses word and checks if valid
-// returns true if valid false if invalid
-router.post('/addWord', async (req, res) => {
-    console.time('start');
+    socket.on('new word', async (newWord) => {
     // get the word
-    const word = req.body.Word;
-    const user = req.body.User;
-    const message = req.body.Message;
-
-    console.log("request body : ", req.body)
-    console.log("body values : ", word, user , message);
+    const word = newWord.Word;
+    const user = newWord.User;
+    const message = newWord.Message;
 
     // check if it is valid
-    const validArr = await Promise.all([wordIsValid(word), wordIsValid(user), wordIsValid(message)]);
-    const validity = validArr.every(elem => elem === true);
-    // let validity = await wordIsValid(word);
-    console.log("validity to return : ", validity);
+    const validity = await checkSubmissionValidity(word, user, message);
 
-    // send it back
-    res.setHeader('Content-Type', 'application/json');
-    res.json({
-        validWord: validity
-    });
-    
-    console.timeEnd('start');
+    // if valid send it back and add to database
+    if(validity == true){
+        socket.emit("add word", {Word : word, User : user, Message : message}) 
+        addWordToDatabase(word, user, message);
 
-    // trigger socket connection`
-    // send back new word to every person that needs it (subscriber)
-    // we do this instead of sending back the whole thing to save data
-    // only do this if the word is valid
-
-    // if word is valid update DB
-    if (validity == true) {
-        // add word to db
-        const insertionArgs = `INSERT INTO wordInfo (Word, User, Message) VALUES ('${word}','${user}','${message}');`;
-        DBconnection.query(insertionArgs, (err, data) => {
-            if (err) console.log(err);
-            console.log("Added new word to Database !");
-        })
     }
-    // else do nothing and return word validity
-})
-
-// catcher route for all invalid requests
-router.get('*', (req, res) => {
-    res.send("<b>That is not a valid route, sorry !<b>");
+    // else emit false to show invalid form and do not add it to databse
+    else{
+        socket.emit("show invalid form");
+    }
+    });
 });
 
-// SOCKET CONNECTION
+// note : we are not closing mysql connection since app 'never stops' -- only when server stops but then everything is down
 
 module.exports = router;
 
 httpServer.listen(PORT, () => {
     console.log("Listening on port ", PORT);
 });
+
+async function checkSubmissionValidity(word, user, message) {
+    const validArr = await Promise.all([wordIsValid(word), wordIsValid(user), wordIsValid(message)]);
+    const validity = validArr.every(elem => elem === true);
+    return validity;
+}
+
+function addWordToDatabase(word, user, message) {
+    const insertionArgs = `INSERT INTO wordInfo (Word, User, Message) VALUES ('${word}','${user}','${message}');`;
+    DBconnection.query(insertionArgs, (err, data) => {
+        if (err)
+            console.log(err);
+        console.log("Added new word to Database !");
+    });
+}
+
+function sendEntireTable(wordDataQuery, socket) {
+    DBconnection.query(wordDataQuery, (err, results) => {
+        if (err) {
+            return error.message;
+        }
+        socket.emit("newcon", (results));
+    });
+}
 
