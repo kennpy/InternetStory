@@ -13,11 +13,6 @@ const WordField = ({ wordList }) => {
         let wordPlusSpace = " ".concat(wordObject.Word); 
         return <Word word={wordPlusSpace} maker={wordObject.User} message={wordObject.Message} key={kVal} /> 
     })
-    // let listOfWordItems = wordList.map((word) => {
-    //     kVal++;
-    //     word = " ".concat(word);
-    //     return <Word className="aWord" word={word} maker key={kVal.toString()} />
-    // })
 
     return (
         <>

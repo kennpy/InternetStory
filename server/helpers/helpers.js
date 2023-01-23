@@ -27,7 +27,7 @@ const wordIsValid = async (word) => {
     if (strOnlyHasSpaces) return false;
 
     // perform our additional checks
-    word = cleanXSS(word);
+    word = cleanForXSS(word);
     let wordIsRegex = wordWasRegex(word);
     let isAcceptableWord;
     let wordIsWeird;
@@ -35,17 +35,16 @@ const wordIsValid = async (word) => {
     // if word is regex return false immediately so no nalicious code can be ran 
     if (wordIsRegex) return false;
     else {
-        isAcceptableWord = await wordIsNaughty(word).catch((err) => {
+        isAcceptableWord = await wordInBadLists(word).catch((err) => {
             console.log("error that was catched : ", err);
         });
-        wordIsWeird = performRandomChecks(word);
+        wordIsWeird = performWordChecks(word);
     }
     // check if word is a url
 
     if (!isAcceptableWord) return false;
-    if (wordIsWeird) return false;
-
-    return true;
+    else if (wordIsWeird) return false;
+    else return true;
 }
 
 
@@ -56,7 +55,7 @@ const wordIsValid = async (word) => {
  * @param {string} word
  * @returns {bool} isUrl
  */
-const performRandomChecks = (word) => {
+const performWordChecks = (word) => {
     // removed : v.isIdentityCard , validator.isJWT (made spaces invalid for some reason)
     let listOfCheckers = [validator.isBtcAddress, validator.isEAN, validator.isEmail, validator.isFQDN, validator.isIBAN, validator.isIP, validator.isISBN, validator.isIPRange, validator.isMobilePhone, validator.isEthereumAddress, validator.isJSON, validator.isLatLong, validator.isMACAddress, validator.isMongoId, validator.isUUID];
 
@@ -73,15 +72,13 @@ const performRandomChecks = (word) => {
 /**
  * Checks if word is bad word (from list of bad words)
  */
-async function wordIsNaughty(word) {
+async function wordInBadLists(word) {
     try {
         // check if word in list of bad words
-        let badListOne = await convertCsvToList(TERMS_BLOCK_CSV)
+        let badListOne = await convertCsvToList()
+        let badListTwo = await convertJsonToList();
 
-        let badListTwo = await convertJsonToList(TERMS_BLOCK_JSON);
-
-        let validity = checkNaughtyValidity(badListOne, badListTwo, word);
-        return validity;
+        return checkWhitelistValidity(badListOne, badListTwo, word);
 
     } catch (err) {
         console.log("ERROR WORD_is_bad : ", err.message);
@@ -89,7 +86,7 @@ async function wordIsNaughty(word) {
 
 }
 
-function checkNaughtyValidity(listOne, listTwo, word) {
+function checkWhitelistValidity(listOne, listTwo, word) {
 
     // check if on whitelist
     // whitelisted words inlude "a" and "I" case insensitive
@@ -154,7 +151,7 @@ function wordWasRegex(oldWord) {
 /**
  * Filters word such that no XSS is possible
  */
-function cleanXSS(word) {
+function cleanForXSS(word) {
     word = xss.filterXSS(word);
     return word;
 }
@@ -167,10 +164,9 @@ function cleanXSS(word) {
  * @param {string} csvFilePath - the file to read from
  * @return {Array} - list of words
  */
-const convertCsvToList = async (csvFilePath) => {
+const convertCsvToList = async () => {
     try {
-        let newlyMadeList = await getListFromCsv();
-        return newlyMadeList;
+        return await getListFromCsv();
 
     } catch (e) {
         console.log("\n\nERROR CSV : ", e.message);
@@ -181,10 +177,10 @@ const convertCsvToList = async (csvFilePath) => {
  * Obvious 
  * @returns list 
  */
-const convertJsonToList = async (filePath) => {
+const convertJsonToList = async () => {
     try {
         let newList = [];
-        const fileData = fs.readFileSync(filePath, { encoding: 'utf8', flag: 'r' });
+        const fileData = fs.readFileSync(TERMS_BLOCK_JSON, { encoding: 'utf8', flag: 'r' });
         fileData.split(",").forEach(str => {
             newList.push(str);
         })
@@ -197,7 +193,6 @@ const convertJsonToList = async (filePath) => {
 }
 
 // GENERAL HELPER SECTION
-
 async function getListFromCsv() {
     try {
 
@@ -238,24 +233,22 @@ async function getListFromCsv() {
         console.log("\nError in GetList : ", err.message);
     }
 }
-
+// returns regex escape
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
+// removed regex characters
 function replaceAll(str, find, replace) {
     return str.replace(new RegExp(escapeRegExp(find), 'g'), replace);
 }
 
+// checks if two string equal eachother case insensitive
 function caseInsensitiveEquals(a, b) {
     return typeof a === 'string' && typeof b === 'string'
         ? a.localeCompare(b, undefined, { sensitivity: 'accent' }) === 0
         : a === b;
 }
-
-
-// TEST
-wordIsValid("hello . ");
 
 module.exports = { wordIsValid };
 

@@ -21,68 +21,52 @@ const App = () => {
 
   const [wordList, updateWordList] = useState(initialWords); // the list of words the gui is based on
   const [wordIsValid, updateWordValidity] = useState(true); // the validity of word we get from addWordToList
-  const [showTimer, updateShowTimer] = useState(false);
-  const [enableSubmitButton, updateEnableSubmitButton] = useState(true);
-  // const [word, updateWord] = useState("");
- // const [message, updateMessage] = useState("");
-
-
-  // HELPER METHODS
-
+  const [showTimer, updateShowTimer] = useState(false); 
+  
   const socket = socketIOClient("http://localhost:3200", {
       withCredentials: true
-});
+  });
   /**
    * adds word to list if it word is allowed by verifying in backend)
    * @param {string} word : the word we are trying to submit 
    */
   const sendWord = (word, user, message) => {
-    // e.preventDefault();
-
     socket.emit("new word", {Word: word, User : user, Message : message});
   }
 
   socket.on("add word", (word) => {
-    console.log("WORD WE ARE ADDING : ", word)
     const newWord = {Word : word.Word, User : word.User, Message : word.Message};
-    updateWordList([...wordList, newWord]);
-    updateWordValidity(true); // update work validity to re-render timer stored in InputField component
-    updateShowTimer(true)
-    console.log("showing timer")
+    updateWordList([...wordList, newWord]); // add the word to the screen
+    updateWordValidity(true); // hide invalid form header in input field
+    updateShowTimer(true) // show countdown timer until next submission 
+    // hide the timer after timer runs out
     setTimeout(() => {
-      console.log("hiding timer")
       updateShowTimer(false)
     }, msBetweenSubmits)
   })
 
   socket.on("show invalid form", () => {
-    updateWordValidity(false);
+    updateWordValidity(false); // show invalid header
   }) 
 
   // on initial page load get all the form data and update the wordlist
   // we do this so we are not requesting the entire db on subsequent web pings
 useEffect(() => {
-    // delete what is there so we dont repeat inserts
-    updateWordList(() => initialWords);
-    console.log("word state after clearing : ", wordList)
-
-    // get the initial data
-    console.log("\n!!Getting form data !!\n");
-    socket.on("newcon", data => {
-          console.log("recieved new data : ", data)
-          updateWordList(wordList => [...wordList, ...data]);
-    })
-
-    return () => socket.disconnect();
-}, [])
-
-
+      // delete what is there so we dont repeat inserts
+      updateWordList(() => initialWords);
+      // get the initial data
+      socket.on("newcon", data => {
+            updateWordList(wordList => [...wordList, ...data]);
+      })
+      return () => socket.disconnect();
+    }, [])
+ 
   return (
     <>
       <h1>Welcome to Internet Story!</h1>
       <div className="mainArea">
         <WordField wordList={wordList}/>
-        <InputField addWordToList={sendWord} wordIsValid={wordIsValid} showTimer={showTimer} updateShowTimer={updateShowTimer} />
+        <InputField addWordToList={sendWord} wordIsValid={wordIsValid} showTimer={showTimer} />
       </div>
 
     </>

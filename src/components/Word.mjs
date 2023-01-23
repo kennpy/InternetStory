@@ -5,9 +5,6 @@ import "./WordCard.css";
 
 const Word = ({ word, maker, message }) => {
     const [isHover, setHover] = useState(false);
-
-    console.log("word props : ", word, maker, message);
-
     const handleMouseEnter = () => setHover(true);
     const handleMouseLeave = () => setHover(false);
 

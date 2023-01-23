@@ -2,15 +2,12 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types'; // ES6
 import Timer from './Timer';
 
-const InputField = ({ addWordToList: verifyThenAdd, wordIsValid , showTimer, updateShowTimer}) => {
+const InputField = ({ addWordToList: verifyThenAdd, wordIsValid , showTimer}) => {
     // Create state variables to store the values of the word, name, and message inputs
     const [word, updateWord] = useState("");
     const [name, updateName] = useState("");
     const [message, updateMessage] = useState("");
 
-    // time since last submission
-    // check if submit status is valid (can user registre the onSubmit event or not)
-    // Store the value of wordIsValid in a separate variable
     let showValidForm = wordIsValid;
 
     // Update the state variables for word, name, and message when the corresponding input values change
@@ -34,14 +31,7 @@ const InputField = ({ addWordToList: verifyThenAdd, wordIsValid , showTimer, upd
         // else we do nothing (add an effect later)
     }
 
-    useEffect(() => {
-        console.log("validity has been updated to : ", wordIsValid)
-    }, [wordIsValid])
-
-    if(showTimer) console.log("showing timer !!! (this is printing inside inputField")
-    else console.log("\n\nHIDING TIMER ")
-
-    // Display an error message if the word input is invalid
+    // error message if the word input is invalid
     const invalidHeader = <p>PLEASE ENTER VALID WORD</p>;
 
     // Render the input fields for word, name, and message, along with the submit button

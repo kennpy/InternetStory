@@ -1,36 +1,21 @@
-// handles all word processing / handling and adds to frontend using websocket connection
-// frontend separate from backend, in other words client served up on one server and word processing happens on another server
-
-// for REST apis using node
 const express = require('express')
-// to organize our routes
 const router = express.Router();
-// to use our app
 const app = express();
-const path = require('path');
-// "cross origin resource sharing" --  (frontend is running on differnt port than backend) -- share resources with frontend and backend despite being on differnt 'server'
 const cors = require('cors');
 const mysql = require('mysql');
 const { Server } = require("socket.io");
-
+const { error } = require('console');
 const createServer  = require("http").createServer;
-
+const helmet = require('helmet');
+const path = require('path')
+console.log("cwd : ", path.resolve(__dirname, "../helpers/helpers.js"))
+console.log("ending cwd")
+const {wordIsValid} = require(path.resolve(__dirname, "../helpers/helpers.js"));
+//const { wordIsValid } = require("/Users/kenjismith/Programming/personal/internet-story/server/helpers/helpers.js");
 
 const PORT = 3200;
-const helmet = require('helmet');
-
-
-// const process = require('process');
 
 // SECURITY
-// cleans req.body
-
-// sets various headers for every req, response cycle
-// helper functions
-const { wordIsValid } = require("/Users/kenjismith/Programming/personal/internet-story/server/helpers/helpers.js");
-const { error } = require('console');
-
-// add safety
 app.use(helmet());
 
 
@@ -40,16 +25,6 @@ app.use(express.urlencoded({extended : false}));
 app.use(express.json());
 // cors middleware since frontend and backend are on different ports
 app.use(cors());
-
-
-// prevent client side scripts from accessing cookies
-// app.use(session({
-//     secret: "secret",
-//     cookie: {
-//         httpOnly: true,
-//         secure: true
-//     }
-// }))
 
 // LISTEN
 
@@ -96,7 +71,7 @@ io.on('connection', (socket) => {
     sendEntireTable(allWordsQuery, socket);
 
     socket.on('disconnect', () => {
-      console.log('user disconnected');
+      console.log('user disconnected', conCount--);
     });
 
     socket.on('new word', async (newWord) => {

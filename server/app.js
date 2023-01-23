@@ -6,5 +6,3 @@ const app = express();
 const PORT = 3200;
 const index = require("./routes/index");
 const helmet = require('helmet');
-
-// MIDDELWARE
