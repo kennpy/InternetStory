@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types'; // ES6
 import Timer from './Timer';
 
-const InputField = ({ addWordToList: verifyThenAdd, wordIsValid , showTimer}) => {
+const InputField = ({ addWordToList: verifyThenAdd , wordIsValid , showTimer}) => {
     // Create state variables to store the values of the word, name, and message inputs
     const [word, updateWord] = useState("");
     const [name, updateName] = useState("");
     const [message, updateMessage] = useState("");
+
+    console.log(verifyThenAdd)
 
     let showValidForm = wordIsValid;
 

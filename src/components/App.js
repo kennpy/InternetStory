@@ -22,7 +22,10 @@ const App = () => {
   const [wordList, updateWordList] = useState(initialWords); // the list of words the gui is based on
   const [wordIsValid, updateWordValidity] = useState(true); // the validity of word we get from addWordToList
   const [showTimer, updateShowTimer] = useState(false); 
-  
+
+  // !! Multiple connections are made per user.
+  // render relies on sendWord which relies on socket and I don't know how to get around this
+  // so for now we are sticking with this inneficiency 
   const socket = socketIOClient("http://localhost:3200", {
       withCredentials: true
   });
@@ -34,21 +37,6 @@ const App = () => {
     socket.emit("new word", {Word: word, User : user, Message : message});
   }
 
-  socket.on("add word", (word) => {
-    const newWord = {Word : word.Word, User : word.User, Message : word.Message};
-    updateWordList([...wordList, newWord]); // add the word to the screen
-    updateWordValidity(true); // hide invalid form header in input field
-    updateShowTimer(true) // show countdown timer until next submission 
-    // hide the timer after timer runs out
-    setTimeout(() => {
-      updateShowTimer(false)
-    }, msBetweenSubmits)
-  })
-
-  socket.on("show invalid form", () => {
-    updateWordValidity(false); // show invalid header
-  }) 
-
   // on initial page load get all the form data and update the wordlist
   // we do this so we are not requesting the entire db on subsequent web pings
 useEffect(() => {
@@ -58,6 +46,22 @@ useEffect(() => {
       socket.on("newcon", data => {
             updateWordList(wordList => [...wordList, ...data]);
       })
+
+      socket.on("add word", (word) => {
+        const newWord = {Word : word.Word, User : word.User, Message : word.Message};
+        updateWordList([...wordList, newWord]); // add the word to the screen
+        updateWordValidity(true); // hide invalid form header in input field
+        updateShowTimer(true) // show countdown timer until next submission 
+        // hide the timer after timer runs out
+        setTimeout(() => {
+          updateShowTimer(false)
+        }, msBetweenSubmits)
+      })
+    
+      socket.on("show invalid form", () => {
+        updateWordValidity(false); // show invalid header
+      }) 
+
       return () => socket.disconnect();
     }, [])
  
