@@ -1,20 +1,13 @@
 const fs = require('fs');
-
 const xss = require('xss');
-
 const validator = require('validator');
-
 const path = require('path');
 const csv = require('fast-csv');
-
 const { once } = require('events');
-// const { default: Word } = require('../../src/components/Word.mjs');
-
 
 const TERMS_BLOCK_CSV = "/Users/kenjismith/Programming/personal/internet-story/server/helpers/Terms-to-Block.csv";
 const TERMS_BLOCK_JSON = "/Users/kenjismith/Programming/personal/internet-story/server/helpers/naughtyList2.json";
 const BAD_WORD_CSV_KEY = 'FrontGate Media,Your Gateway to the Chrisitan Audience';
-
 const WHITE_LISTED_WORDS = ['a', 'i', 'ad', 'am', 'as', 'at', 'be', 'by', 'do', 'go'
     , 'he', 'hi', 'hey', 'id', 'if', 'in', 'is', 'it', 'me', 'my', 'no', 'of', 'oh', 'ok', 'as'
     , 'an', 'and', 'to', 'up', 'so', 'we', 'us', 'or', 'pi', 'ha', 'on', 'by', 'ad', '.'];
@@ -151,7 +144,7 @@ function checkNaughtyValidity(listOne, listTwo, word) {
  * Checks if word is a regex expressoin (these are bad since they can cause errors)
  */
 function wordWasRegex(oldWord) {
-
+    
     let newWord = oldWord.replace(/[^0-9a-z-A-Z.(): ]/g, "").replace(/ +/, " ");
     console.log("after regex check  SAME: ", oldWord === newWord);
 
@@ -175,7 +168,6 @@ function cleanXSS(word) {
  * @return {Array} - list of words
  */
 const convertCsvToList = async (csvFilePath) => {
-    console.log("INSIDE CONVERT CSV");
     try {
         let newlyMadeList = await getListFromCsv();
         return newlyMadeList;

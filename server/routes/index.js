@@ -61,7 +61,8 @@ const io = new Server(httpServer, {
         origin: "http://localhost:3000",
         methods: ["GET", "POST"],
         credentials:true
-        }
+        }, 
+        
 });
 
 // DB CON
@@ -89,10 +90,9 @@ DBconnection.connect((con_err) => {
 let conCount = 0;
 io.on('connection', (socket) => {
     console.log('a user connected', conCount++);
-    // send back the word data
-    // (default for now)
-    const allWordsQuery = "SELECT * FROM wordInfo";
 
+    // send back all words
+    const allWordsQuery = "SELECT * FROM wordInfo";
     sendEntireTable(allWordsQuery, socket);
 
     socket.on('disconnect', () => {
@@ -100,25 +100,24 @@ io.on('connection', (socket) => {
     });
 
     socket.on('new word', async (newWord) => {
-    // get the word
-    const word = newWord.Word;
-    const user = newWord.User;
-    const message = newWord.Message;
+        const word = newWord.Word;
+        const user = newWord.User;
+        const message = newWord.Message;
+        
+        // check if it is valid
+        const submissionIsValid = await checkSubmissionValidity(word, user, message);
 
-    // check if it is valid
-    const validity = await checkSubmissionValidity(word, user, message);
+        // if valid send it back and add to database
+        if(submissionIsValid){
+            socket.emit("add word", {Word : word, User : user, Message : message}) 
+            addWordToDatabase(word, user, message);
 
-    // if valid send it back and add to database
-    if(validity == true){
-        socket.emit("add word", {Word : word, User : user, Message : message}) 
-        addWordToDatabase(word, user, message);
-
-    }
-    // else emit false to show invalid form and do not add it to databse
-    else{
-        socket.emit("show invalid form");
-    }
-    });
+        }
+        // else emit false to show invalid form and do not add it to databse
+        else{
+            socket.emit("show invalid form");
+        }
+        });
 });
 
 // note : we are not closing mysql connection since app 'never stops' -- only when server stops but then everything is down

@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types'; // ES6
+import Timer from './Timer';
 
-const InputField = ({ addWordToList: verifyThenAdd, wordIsValid }) => {
+const InputField = ({ addWordToList: verifyThenAdd, wordIsValid , showTimer, updateShowTimer}) => {
     // Create state variables to store the values of the word, name, and message inputs
     const [word, updateWord] = useState("");
     const [name, updateName] = useState("");
     const [message, updateMessage] = useState("");
 
     // time since last submission
-
     // check if submit status is valid (can user registre the onSubmit event or not)
-
     // Store the value of wordIsValid in a separate variable
     let showValidForm = wordIsValid;
 
@@ -35,6 +34,13 @@ const InputField = ({ addWordToList: verifyThenAdd, wordIsValid }) => {
         // else we do nothing (add an effect later)
     }
 
+    useEffect(() => {
+        console.log("validity has been updated to : ", wordIsValid)
+    }, [wordIsValid])
+
+    if(showTimer) console.log("showing timer !!! (this is printing inside inputField")
+    else console.log("\n\nHIDING TIMER ")
+
     // Display an error message if the word input is invalid
     const invalidHeader = <p>PLEASE ENTER VALID WORD</p>;
 
@@ -44,13 +50,14 @@ const InputField = ({ addWordToList: verifyThenAdd, wordIsValid }) => {
             <div className="totalField">
                 <form onSubmit={preventDefaultThenUpdate}>
                     {showValidForm ? null : invalidHeader}
+                    {showTimer ? <Timer showTimer={showTimer}/> : null}
                     <label htmlFor="wordInput">Word : </label>
                     <input type='text' id="wordInput" name="word" value={word} onChange={setNewInputText} maxLength={20} minLength={1} autoFocus></input>
                     <label htmlFor="nameInput">Name : </label>
                     <input type='text' id="nameInput" name="name" value={name} onChange={setNewInputText} maxLength={20} minLength={1}></input>
                     <label htmlFor="messageInput">Message : </label>
                     <input type='text' id="messageInput" name="message" value={message} onChange={setNewInputText} maxLength={40} minLength={1}></input>
-                    <button type='submit'>Submit</button>
+                    <button type='submit' disabled={showTimer}>Submit</button>
                 </form>
             </div>
         </>
